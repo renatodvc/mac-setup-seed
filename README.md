@@ -21,6 +21,16 @@ Every step is a presence check followed by an action, so running it again on a
 configured machine installs nothing, clones nothing, signs in to nothing, and
 still reaches the handover.
 
+**Re-running it never repairs the clone, either.** When the content repository is
+already at `$HOME/contexts/setup`, the script says so and moves on: it does not
+pull, and it does not update submodules. A clone taken before a submodule was
+added therefore keeps an empty directory where that submodule belongs, however
+often this is re-run — and nothing here reports it, because the clone itself
+succeeded. Updating the repository is your own `git pull`, and materialising a
+submodule added since the clone is `git submodule update --init` inside
+`$HOME/contexts/setup`. The engine's own audit is where the missing path shows
+up.
+
 ## The three things it asks you for
 
 It prints these before doing anything, so you know how long to stay at the
@@ -67,9 +77,8 @@ repository sitting at `$HOME/contexts/setup`.
 shellcheck bootstrap.sh
 ```
 
-By hand, every time. This is the one script in the system with no other safety
-net: it runs before anything is installed, and the only environment that can
-test it from stock macOS is a fresh virtual machine.
+By hand, every time. It runs before anything is installed, and the only
+environment that can test it from stock macOS is a fresh virtual machine.
 
 ## What is not here
 

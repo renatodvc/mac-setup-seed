@@ -6,19 +6,19 @@
 #     && bash /tmp/mac-bootstrap.sh
 #
 # It holds no credential, and it knows exactly one thing about the content
-# repository: that `./setup apply` at the clone root starts the engine ([R-115],
-# plan 04 D2). Nothing else about that repository's structure appears here.
+# repository: that `./setup apply` at the clone root starts the engine
+# ([R-115]). Nothing else about that repository's structure appears here.
 #
 # Written for the bash a stock macOS carries — 3.2, from 2007. No associative
 # arrays, no ${var,,}, nothing from bash 4. The documented command invokes bash
-# explicitly, so the shebang and the invocation agree ([D-004], plan 04 D7).
+# explicitly, so the shebang and the invocation agree ([D-004]).
 set -euo pipefail
 
 # --- constants -------------------------------------------------------------
 
 # The content repository. Public exposure is its name, which [D-028] accepted as
 # the minor cost of a public bootstrap. SETUP_REPO overrides it, for a bench run
-# against a branch or a fork (plan 04 Q-B).
+# against a branch or a fork.
 SETUP_REPO=${SETUP_REPO:-renatodvc/mac-setup}
 
 # The repository path is load-bearing: every symlink the engine delivers points
@@ -28,14 +28,14 @@ CLONE_PATH="$HOME/contexts/setup"
 # Apple Silicon only, so the prefix is a constant ([D-041]).
 BREW_PREFIX=/opt/homebrew
 
-# "Current macOS" is a floor, not an equality ([R-105], [D-080]). A Mac that
+# "Current macOS" is a floor, not an equality ([R-105], [D-041]). A Mac that
 # ships newer runs untested and is not blocked; below the baseline this stops.
 MACOS_MAJOR_FLOOR=26
 
 # A floor with room for the first converge, not a measurement: Command Line
 # Tools is roughly 3 GB and Homebrew with git, gh and ansible roughly 1.5 GB,
 # and then the casks arrive. Adjustable once the package lists make the real
-# number knowable (plan 04 D5).
+# number knowable.
 MIN_DISK_GB=20
 
 # The headless Command Line Tools route is not ours and has broken between
@@ -118,9 +118,9 @@ done
 
 # --- preflight -------------------------------------------------------------
 
-# Read-only, and it refuses before touching anything ([R-105], [T-108]). Exit 2
+# Read-only, and it refuses before touching anything ([R-105]). Exit 2
 # matches the engine's "refused before doing anything", so one convention covers
-# both halves of a first run (plan 04 D5, D6).
+# both halves of a first run.
 preflight() {
     local version major probe available
 
@@ -138,7 +138,7 @@ preflight() {
     version=$(sw_vers -productVersion)
     major=${version%%.*}
     [ "$major" -ge "$MACOS_MAJOR_FLOOR" ] ||
-        refuse "this needs macOS $MACOS_MAJOR_FLOOR or newer ([R-105], [D-080]). Found $version."
+        refuse "this needs macOS $MACOS_MAJOR_FLOOR or newer ([R-105], [D-041]). Found $version."
 
     probe="$HOME/.mac-setup-bootstrap-probe.$$"
     if ! (: >"$probe") 2>/dev/null; then
@@ -164,7 +164,7 @@ preflight() {
 # Printed before anything happens, so the operator knows what is coming and can
 # stay at the machine for the right minutes. Everything here belongs to the
 # bootstrap's own block, which is not one of the engine's three windows: it runs
-# before Ansible exists ([D-012], [D-028], plan 04 D4).
+# before Ansible exists ([D-012], [D-028]).
 announce() {
     cat <<ANNOUNCE
 
@@ -280,7 +280,7 @@ install_homebrew() {
     # rejects for itself. It stays because it is Homebrew's only supported
     # install path, and maintaining a fork of somebody else's installer inside
     # the least-tested part of the system would be worse. Deliberate, and
-    # recorded here so it does not read as an oversight (plan 04 D3).
+    # recorded here so it does not read as an oversight.
     NONINTERACTIVE=1 /bin/bash -c \
         "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" ||
         fail "Homebrew's installer did not finish."
@@ -294,19 +294,17 @@ install_homebrew() {
 
 # --- step 3: git, gh, ansible ---------------------------------------------
 
-# Two environment variables, and neither is optional ([L-071]). Both were found
-# by the first bench run, on the path nobody tests: a person in Terminal.
+# Two environment variables, and neither is optional ([L-071]). They cover the
+# path nobody tests: a person in Terminal.
 #
 # NONINTERACTIVE=1 — Homebrew 6.0.18 asks "Do you want to proceed with the
 # installation? [y/n]" when stdin is a TERMINAL. Without it a human running this
 # script is asked three times, for `git`, `gh` and `ansible`, while the announce
 # above promises three named questions and then unattended running. Homebrew
-# proceeds silently with no terminal, which is why the Ansible path never saw
-# this and why an unattended bootstrap sat at a prompt nobody documented.
+# proceeds silently with no terminal, which is why no automated path sees it.
 #
-# HOMEBREW_NO_AUTO_UPDATE=1 — `brew install` updates Homebrew itself first,
-# by default. This function's own comment claimed "no `brew update` beyond what
-# the installer already did" ([R-504]) and that was simply not true.
+# HOMEBREW_NO_AUTO_UPDATE=1 — `brew install` updates Homebrew itself first, by
+# default, and that update is unconditional network work ([R-504]).
 install_formula() {
     # install_formula <formula> <binary it provides>
     if [ -x "$BREW_PREFIX/bin/$2" ]; then
@@ -345,8 +343,9 @@ sign_in_to_github() {
 # --- step 5: the clone ----------------------------------------------------
 
 # True when the work tree at $1 has a remote naming $SETUP_REPO, in either URL
-# form. Nothing after the bootstrap ever checks this again, which is a named gap
-# rather than an assumption (plan 04 Open risks).
+# form. This is the only check of the clone's remote: nothing after the
+# bootstrap re-checks it, so a repository swapped or repointed by hand at
+# $HOME/contexts/setup is converged from without complaint. A known gap.
 is_our_work_tree() {
     local url
     url=$(git -C "$1" remote get-url origin 2>/dev/null || true)
@@ -375,11 +374,11 @@ clone_content_repository() {
 
     mkdir -p "$HOME/contexts"
     say "    cloning $SETUP_REPO into $CLONE_PATH"
-    # --recurse-submodules is load-bearing, not tidiness ([D-155]). The Claude
-    # PreToolUse hook is a submodule under vendor/, and every delivered
-    # settings.json names a path inside it. Without recursion the directory is
-    # empty, the path does not exist, and Claude Code fails that hook on every
-    # Bash call — with nothing here reporting it, because the clone succeeded.
+    # --recurse-submodules is load-bearing, not tidiness ([D-155]). vendor/ holds
+    # a submodule, and declarations inside the content repository name paths
+    # inside it. Without recursion the directory is empty, those paths do not
+    # exist, and whatever reads them fails — with nothing here reporting it,
+    # because the clone succeeded.
     gh repo clone "$SETUP_REPO" "$CLONE_PATH" -- --recurse-submodules ||
         fail "the clone did not finish. Check that this account can read $SETUP_REPO."
 }
@@ -410,7 +409,7 @@ hand_over() {
     say "    handing over to the engine; its exit code becomes this script's"
     say ""
     # exec, so the engine's exit code is this script's — including 3, which means
-    # converged but a second run is advised ([R-110], plan 04 D6).
+    # converged but a second run is advised ([R-110]).
     exec "$CLONE_PATH/setup" apply
 }
 
