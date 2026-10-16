@@ -9,6 +9,10 @@
 # repository: that `./setup apply` at the clone root starts the engine
 # ([R-115]). Nothing else about that repository's structure appears here.
 #
+# This file is the source. The public mac-setup-seed repository serves a
+# byte-for-byte copy, mirrored by hand, so an edit here is not live until the
+# mirror is updated; a stock-tier bench run is what catches a stale one.
+#
 # Written for the bash a stock macOS carries — 3.2, from 2007. No associative
 # arrays, no ${var,,}, nothing from bash 4. The documented command invokes bash
 # explicitly, so the shebang and the invocation agree ([D-004]).
@@ -30,7 +34,7 @@ BREW_PREFIX=/opt/homebrew
 
 # "Current macOS" is a floor, not an equality ([R-105], [D-041]). A Mac that
 # ships newer runs untested and is not blocked; below the baseline this stops.
-MACOS_MAJOR_FLOOR=26
+MACOS_MAJOR_FLOOR=27
 
 # A floor with room for the first converge, not a measurement: Command Line
 # Tools is roughly 3 GB and Homebrew with git, gh and ansible roughly 1.5 GB,
@@ -297,11 +301,13 @@ install_homebrew() {
 # Two environment variables, and neither is optional ([L-071]). They cover the
 # path nobody tests: a person in Terminal.
 #
-# NONINTERACTIVE=1 — Homebrew 6.0.18 asks "Do you want to proceed with the
-# installation? [y/n]" when stdin is a TERMINAL. Without it a human running this
-# script is asked three times, for `git`, `gh` and `ansible`, while the announce
-# above promises three named questions and then unattended running. Homebrew
-# proceeds silently with no terminal, which is why no automated path sees it.
+# HOMEBREW_NO_ASK=1 — `brew install` asks "Do you want to proceed with the
+# installation? [y/n]" when stdin and stdout are a TERMINAL and the plan pulls in
+# dependencies. Without it a human running this script is asked for `git` and
+# `ansible`, while the announce above promises three named questions and then
+# unattended running. Homebrew proceeds silently with no terminal, which is why
+# no automated path sees it. `NONINTERACTIVE=1` does not reach this prompt: it
+# is read by Homebrew's install script, and Homebrew 7.0.9's ask mode ignores it.
 #
 # HOMEBREW_NO_AUTO_UPDATE=1 — `brew install` updates Homebrew itself first, by
 # default, and that update is unconditional network work ([R-504]).
@@ -312,7 +318,7 @@ install_formula() {
         return 0
     fi
     say "    installing $1"
-    NONINTERACTIVE=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install "$1" ||
+    HOMEBREW_NO_ASK=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install "$1" ||
         fail "brew install $1 did not finish."
     [ -x "$BREW_PREFIX/bin/$2" ] ||
         fail "brew installed $1 and $BREW_PREFIX/bin/$2 is not there."

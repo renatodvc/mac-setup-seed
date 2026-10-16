@@ -23,13 +23,10 @@ still reaches the handover.
 
 **Re-running it never repairs the clone, either.** When the content repository is
 already at `$HOME/contexts/setup`, the script says so and moves on: it does not
-pull, and it does not update submodules. A clone taken before a submodule was
-added therefore keeps an empty directory where that submodule belongs, however
-often this is re-run — and nothing here reports it, because the clone itself
-succeeded. Updating the repository is your own `git pull`, and materialising a
-submodule added since the clone is `git submodule update --init` inside
-`$HOME/contexts/setup`. The engine's own audit is where the missing path shows
-up.
+pull, and it does not update submodules. Updating the repository is your own
+`git pull`, and a submodule added since the clone is
+`git submodule update --init` inside `$HOME/contexts/setup`. The engine's audit
+is where a missing submodule path shows up.
 
 ## The three things it asks you for
 
@@ -67,7 +64,7 @@ Resuming is running it again.
 
 ## What it refuses
 
-Running as root, anything but Apple Silicon, macOS older than 26, an unwritable
+Running as root, anything but Apple Silicon, macOS older than 27, an unwritable
 `$HOME`, no network, less than 20 GB free, or something that is not the content
 repository sitting at `$HOME/contexts/setup`.
 
