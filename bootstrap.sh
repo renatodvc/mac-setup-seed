@@ -42,6 +42,12 @@ MACOS_MAJOR_FLOOR=27
 # number knowable.
 MIN_DISK_GB=20
 
+# Readable only by a process with Full Disk Access, and present on every Mac,
+# so it answers for the terminal before Chrome or anything else exists. The
+# first `apply` runs in this process, and without the grant its Chrome step
+# reads every profile as missing ([L-096], [D-218]).
+FDA_PROBE="/Library/Application Support/com.apple.TCC/TCC.db"
+
 # The headless Command Line Tools route is not ours and has broken between
 # macOS releases before ([L-002]). The GUI fallback covers it.
 CLT_SENTINEL=/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
@@ -160,7 +166,14 @@ preflight() {
     [ "$available" -ge "$MIN_DISK_GB" ] ||
         refuse "this needs about ${MIN_DISK_GB} GB free and finds ${available} GB."
 
-    say "    macOS $version on $(uname -m), ${available} GB free, github.com reachable."
+    # Last, so a guest without the grant still reaches the checks above.
+    head -c 1 "$FDA_PROBE" >/dev/null 2>&1 ||
+        refuse "this terminal does not have Full Disk Access ([D-218]).
+         System Settings → Privacy & Security → Full Disk Access → +, add this
+         terminal and turn it on. Then quit the terminal, open it again, and
+         run this script again: a running terminal does not get the grant."
+
+    say "    macOS $version on $(uname -m), ${available} GB free, github.com reachable, Full Disk Access granted."
 }
 
 # --- the interaction summary ----------------------------------------------
