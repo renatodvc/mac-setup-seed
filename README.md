@@ -65,8 +65,13 @@ Resuming is running it again.
 ## What it refuses
 
 Running as root, anything but Apple Silicon, macOS older than 27, an unwritable
-`$HOME`, no network, less than 20 GB free, or something that is not the content
-repository sitting at `$HOME/contexts/setup`.
+`$HOME`, no network, less than 20 GB free, a terminal without Full Disk Access,
+or something that is not the content repository sitting at `$HOME/contexts/setup`.
+
+**Give the terminal Full Disk Access before you run it**: System Settings →
+Privacy & Security → Full Disk Access → +, add the terminal, turn it on, then
+quit and open the terminal again. The first converge runs in this terminal, and
+without the grant macOS hides Chrome's data from it.
 
 ## Before pushing a change
 
