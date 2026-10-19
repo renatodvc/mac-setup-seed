@@ -9,9 +9,9 @@
 # repository: that `./setup apply` at the clone root starts the engine
 # ([R-115]). Nothing else about that repository's structure appears here.
 #
-# This file is the source. The public mac-setup-seed repository serves a
-# byte-for-byte copy, mirrored by hand, so an edit here is not live until the
-# mirror is updated; a stock-tier bench run is what catches a stale one.
+# This repository is the only copy. The content repository carries it as a
+# submodule at `bootstrap/`, pinned to a commit, and tests and lints it there
+# ([D-220]); an edit is live here as soon as it merges.
 #
 # Written for the bash a stock macOS carries — 3.2, from 2007. No associative
 # arrays, no ${var,,}, nothing from bash 4. The documented command invokes bash
