@@ -21,12 +21,12 @@ Every step is a presence check followed by an action, so running it again on a
 configured machine installs nothing, clones nothing, signs in to nothing, and
 still reaches the handover.
 
-**Re-running it never repairs the clone, either.** When the content repository is
-already at `$HOME/contexts/setup`, the script says so and moves on: it does not
-pull, and it does not update submodules. Updating the repository is your own
-`git pull`, and a submodule added since the clone is
-`git submodule update --init` inside `$HOME/contexts/setup`. The engine's audit
-is where a missing submodule path shows up.
+**Re-running it never updates the clone, either.** When the content repository
+is already at `$HOME/contexts/setup`, the script says so and does not pull. It
+only checks out the submodules the clone lacks — after a first clone that
+stopped at its submodules, or a submodule added since — at the commit the clone
+pins, and it never moves one that is already checked out. Updating the
+repository is your own `git pull`.
 
 ## The three things it asks you for
 

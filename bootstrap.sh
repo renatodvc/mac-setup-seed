@@ -374,6 +374,42 @@ is_our_work_tree() {
     esac
 }
 
+# The paths of the submodules the clone has not checked out: `git submodule
+# status` marks both "never initialized" and "initialized but empty" with a
+# leading `-`.
+missing_submodules() {
+    git -C "$CLONE_PATH" submodule status 2>/dev/null |
+        sed -n 's/^-[0-9a-f]* \(.*\)$/\1/p'
+}
+
+# git with gh's sign-in as its GitHub credential, as `gh repo clone` runs it.
+# The sign-in is the only GitHub credential a new Mac has, so a plain git would
+# ask for a password on the terminal for a private submodule.
+git_with_gh_credential() {
+    git -c credential.https://github.com.helper= \
+        -c 'credential.https://github.com.helper=!gh auth git-credential' "$@"
+}
+
+# A clone whose submodule step failed leaves the repository on disk, so the
+# next run finds "a clone" and would hand over with its submodules empty. This
+# is still seed-only ([D-054]): it checks out only what is missing, at the
+# commit the clone pins, and never moves a submodule that is already there.
+check_out_missing_submodules() {
+    local path
+    local paths=()
+
+    while IFS= read -r path; do
+        paths+=("$path")
+    done < <(missing_submodules)
+    [ "${#paths[@]}" -gt 0 ] || return 0
+
+    say "    checking out the submodules it lacks: ${paths[*]}"
+    git_with_gh_credential -C "$CLONE_PATH" submodule update --init --recursive -- "${paths[@]}" ||
+        fail "the submodules did not check out. Check that this account can read them, then run this again."
+    [ -z "$(missing_submodules)" ] ||
+        fail "git reported success and these submodules are still empty: $(missing_submodules | tr '\n' ' ')"
+}
+
 clone_content_repository() {
     step "The content repository"
 
@@ -383,6 +419,7 @@ clone_content_repository() {
             # the operator's `git pull`, and seed-only is the discipline
             # everywhere else too ([D-054]).
             skip "$CLONE_PATH is already a clone of $SETUP_REPO"
+            check_out_missing_submodules
             return 0
         fi
         refuse "something else is at $CLONE_PATH, and this path is where the repository
